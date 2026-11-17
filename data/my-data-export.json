@@ -1,0 +1,185 @@
+{
+ "version": 1,
+ "exportedFrom": "Open Grips Trainer (Claude artifact)",
+ "sessions": [
+  {
+   "created": 1794363555994,
+   "date": "2026-11-10",
+   "gripper": "prometheus",
+   "hand": "RH",
+   "id": "smwbhqcuysvcm",
+   "reps": [
+    47,
+    22,
+    26
+   ],
+   "weight": 32,
+   "zone": "Power"
+  },
+  {
+   "created": 1794363992676,
+   "date": "2026-11-10",
+   "gripper": "prometheus",
+   "hand": "LH",
+   "id": "smwbhzpszbxy3",
+   "reps": [
+    39,
+    27,
+    13
+   ],
+   "weight": 32,
+   "zone": "Power"
+  },
+  {
+   "created": 1794374741544,
+   "date": "2026-11-10",
+   "gripper": "sisyphus",
+   "hand": "RH",
+   "id": "smwboe3oog4kl",
+   "reps": [
+    58,
+    23,
+    20
+   ],
+   "weight": 90,
+   "zone": "Power"
+  },
+  {
+   "created": 1794375310125,
+   "date": "2026-11-10",
+   "gripper": "sisyphus",
+   "hand": "LH",
+   "id": "smwboqaeljuyt",
+   "reps": [
+    66,
+    22,
+    21
+   ],
+   "weight": 90,
+   "zone": "Power"
+  }
+ ],
+ "settings": {
+  "oneRMTime": 20,
+  "program": {
+   "block": 4,
+   "end": "",
+   "rest": 1,
+   "start": ""
+  },
+  "rest": 20,
+  "seq": [
+   [
+    "board"
+   ],
+   [
+    "grip",
+    "strA"
+   ],
+   [
+    "board"
+   ],
+   [
+    "grip",
+    "strB"
+   ],
+   [
+    "board"
+   ],
+   [
+    "grip",
+    "cardio"
+   ]
+  ],
+  "starter": {
+   "prometheus": [
+    32,
+    22,
+    15,
+    13,
+    10
+   ],
+   "sisyphus": [
+    90,
+    62.5,
+    45,
+    35,
+    27.5
+   ]
+  },
+  "starterCount": 5,
+  "steps": {
+   "prometheus": 1,
+   "sisyphus": 1
+  },
+  "zones": [
+   {
+    "bottom": 20,
+    "name": "Power",
+    "reps": 3,
+    "target": 40,
+    "top": 47
+   },
+   {
+    "bottom": 48,
+    "name": "Power/Strength",
+    "reps": 3,
+    "target": 72,
+    "top": 81
+   },
+   {
+    "bottom": 82,
+    "name": "Strength",
+    "reps": 3,
+    "target": 120,
+    "top": 128
+   },
+   {
+    "bottom": 129,
+    "name": "Strength/Endurance",
+    "reps": 2,
+    "target": 160,
+    "top": 179
+   },
+   {
+    "bottom": 180,
+    "name": "Endurance",
+    "reps": 1,
+    "target": 240,
+    "top": 300
+   }
+  ]
+ },
+ "checks": {
+  "carry": [
+   {
+    "a": "strA",
+    "from": 1,
+    "to": 2
+   }
+  ],
+  "days": [
+   {
+    "date": "2026-11-09",
+    "idx": 0,
+    "items": [
+     "board"
+    ],
+    "n": 0
+   },
+   {
+    "date": "2026-11-10",
+    "idx": 1,
+    "items": [
+     "grip"
+    ],
+    "n": 1
+   }
+  ],
+  "done": {
+   "n0": {
+    "board": true
+   }
+  }
+ }
+}

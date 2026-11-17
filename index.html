@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Open Grips Trainer</title>
+<meta name="description" content="Finger-strength trainer for the Prometheus and Sisyphus grippers. Works offline.">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#E4E8E3">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#121715">
+<meta name="color-scheme" content="light dark">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="%BASE_URL%manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="%BASE_URL%icons/icon-192.png">
+<link rel="apple-touch-icon" href="%BASE_URL%icons/icon-192.png">
+</head>
+<body data-gripper="prometheus">
+<main id="app" aria-live="polite"></main>
+
+<section class="timer" id="timer" hidden aria-label="Hold timer">
+  <div class="timer-inner">
+    <div class="t-head">
+      <div>
+        <div class="t-zone" id="tZone"></div>
+        <div class="small muted" id="tSub"></div>
+      </div>
+      <button class="btn" data-action="t-close">Close</button>
+    </div>
+    <div class="wt" aria-label="Weight">
+      <button data-action="wt-down" aria-label="Decrease weight">−</button>
+      <input id="tWeight" inputmode="decimal" aria-label="Weight in pounds">
+      <button data-action="wt-up" aria-label="Increase weight">+</button>
+      <span class="muted">lbs</span>
+    </div>
+    <div class="ring-wrap">
+      <svg viewBox="0 0 200 200" aria-hidden="true">
+        <circle class="ring-bg" cx="100" cy="100" r="88"/>
+        <circle class="ring-fg" id="ringFg" cx="100" cy="100" r="88"/>
+      </svg>
+      <div class="ring-center">
+        <div class="big" id="tBig">0</div>
+        <div class="under" id="tUnder" aria-live="polite"></div>
+      </div>
+    </div>
+    <div class="reps" id="tReps"></div>
+    <div class="t-actions" id="tActions"></div>
+  </div>
+</section>
+
+<div class="ask" id="ask" hidden>
+  <div class="ask-card" role="alertdialog" aria-modal="true" aria-labelledby="askMsg">
+    <p id="askMsg"></p>
+    <div class="row2"><button class="btn" id="askCancel">Cancel</button><button class="btn primary" id="askOk">OK</button></div>
+  </div>
+</div>
+
+<nav class="tabs" aria-label="Sections">
+  <div class="tabs-inner">
+    <button data-view="today">Today</button>
+    <button data-view="log">Log</button>
+    <button data-view="plan">Plan</button>
+    <button data-view="curve">Curve</button>
+    <button data-view="settings">Settings</button>
+  </div>
+</nav>
+<noscript>Open Grips Trainer needs JavaScript.</noscript>
+<script type="module" src="/src/main.ts"></script>
+</body>
+</html>
