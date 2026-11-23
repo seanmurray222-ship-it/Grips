@@ -25,18 +25,24 @@ body[data-gripper="sisyphus"] { --accent: var(--g-sisyphus); }
 
 *, *::before, *::after { box-sizing: border-box; }
 [hidden] { display: none !important; }
-html { background: var(--bg); -webkit-text-size-adjust: 100%; overflow-x: hidden; }
+/*
+ * Leave html and body without overflow settings, so the page (viewport) is the only scroller.
+ * overflow-x: hidden on body made it a separate scroll container, and with overscroll-behavior
+ * set, swipes on Android landed on body and never reached the page, so nothing scrolled.
+ */
+html { background: var(--bg); -webkit-text-size-adjust: 100%; }
 body {
   margin: 0; background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 16px; line-height: 1.45;
-  -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; overflow-x: hidden;
-  overscroll-behavior-y: none;
+  -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent;
 }
+/* While the full-screen timer is up, stop the page behind it from scrolling (propagates to the viewport). */
 body.timer-open { overflow: hidden; }
 button, input, select { font: inherit; color: inherit; }
 button { cursor: pointer; touch-action: manipulation; }
 :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 
-main { max-width: 560px; margin: 0 auto; padding: calc(14px + var(--safe-t)) 16px calc(var(--tabs-h) + 28px + var(--safe-b)); }
+/* clip (unlike hidden) stops sideways overflow without creating another scroll container. */
+main { max-width: 560px; margin: 0 auto; overflow-x: clip; padding: calc(14px + var(--safe-t)) 16px calc(var(--tabs-h) + 28px + var(--safe-b)); }
 .top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 4px 0 14px; flex-wrap: wrap; }
 .notice { background: var(--surface-2); border-left: 4px solid var(--z1); padding: 10px 12px; border-radius: 6px; font-size: 15px; margin-bottom: 14px; }
 .notice.err { border-left-color: var(--danger); }
