@@ -25,12 +25,13 @@ import {
   writePref,
   type View,
 } from "./store";
-import type { Gripper, Hand } from "./types";
+import type { Activity, Gripper, Hand } from "./types";
 import { ask, askOpen, closeAsk, notify } from "./ui/ask";
 import { esc, gInfo, plural } from "./ui/common";
 import { viewCurve } from "./ui/curve";
 import { viewLog } from "./ui/log";
 import { viewPlan } from "./ui/plan";
+import { viewSession } from "./ui/session";
 import { viewSettings } from "./ui/settings";
 import { T, closeTimer, onVisible, openTimer, setRerender, stepWeight, tDrop, tSave, tSkip, tStart } from "./ui/timer";
 import { viewToday } from "./ui/today";
@@ -49,7 +50,7 @@ function render() {
     return;
   }
   const v =
-    state.view === "log" ? viewLog() : state.view === "curve" ? viewCurve() : state.view === "plan" ? viewPlan() : state.view === "settings" ? viewSettings() : viewToday();
+    state.view === "log" ? viewLog() : state.view === "curve" ? viewCurve() : state.view === "plan" ? (state.session ? viewSession(state.session.n, state.session.a) : viewPlan()) : state.view === "settings" ? viewSettings() : viewToday();
   app.innerHTML = top + v;
   updateTabs();
 }
@@ -106,10 +107,56 @@ async function doImport(file: File) {
     await replaceAll(parsed);
     state.hand = "LH";
     state.editPlan = state.editProgram = state.showForm = false;
+    state.session = null;
     render();
     notify(`Imported ${plural(parsed.sessions.length, "session")}, ${plural(parsed.track.days.length, "finished training day")} and your rotation.`);
   }, cur > 0);
 }
+
+/* ---------- Session page (Plan tab) ---------- */
+/*
+ * Opening a session pushes a history entry, so Android's back gesture returns to the Plan list
+ * instead of leaving the app. Notes save as you type (debounced) and whenever you leave the page.
+ */
+let planScrollY = 0;
+let pendingNote: { n: number; a: Activity; text: string } | null = null;
+let noteTimer = 0;
+
+function setNoteStatus(text: string) {
+  const el = document.getElementById("noteStatus");
+  if (el) el.textContent = text;
+}
+function flushNote() {
+  clearTimeout(noteTimer);
+  if (!pendingNote) return;
+  const { n, a, text } = pendingNote;
+  pendingNote = null;
+  if (plan.noteFor(D(), n, a) === text) return;
+  state.data.track = plan.setNote(D(), n, a, text);
+  void saveTrack().then(() => setNoteStatus(state.error ? "" : "Saved"));
+}
+function openSession(n: number, a: Activity) {
+  flushNote();
+  planScrollY = window.scrollY;
+  state.session = { n, a };
+  history.pushState({ og: "session" }, "");
+  render();
+  window.scrollTo(0, 0);
+}
+/** Leave the session page. `viaHistory` is true when the back gesture already popped our entry. */
+function closeSession(viaHistory = false) {
+  flushNote();
+  if (!state.session) return;
+  state.session = null;
+  if (!viaHistory && history.state && history.state.og === "session") history.back();
+  render();
+  window.scrollTo(0, planScrollY);
+}
+window.addEventListener("popstate", () => {
+  if (state.session) closeSession(true);
+});
+// A reload keeps the history entry but not the open page; drop the marker so Back behaves normally.
+if (history.state && history.state.og === "session") history.replaceState(null, "");
 
 /* ---------- Events ---------- */
 document.addEventListener("click", (e) => {
@@ -118,6 +165,7 @@ document.addEventListener("click", (e) => {
   if (target.id === "askCancel" || target.id === "ask") return closeAsk(false);
   const tab = target.closest<HTMLButtonElement>(".tabs button");
   if (tab) {
+    if (state.session) closeSession();
     state.view = tab.dataset.view as View;
     state.showForm = false;
     render();
@@ -154,17 +202,31 @@ document.addEventListener("click", (e) => {
     case "move-back":
       if (isActivity(act)) setTrack(plan.moveBack(D(), n, act));
       return;
-    case "chip-postpone":
-      if (isActivity(act))
-        ask(`Push ${ACTS[act].label} from ${plan.dayLabel(D(), n)} to ${plan.dayLabel(D(), plan.nextFreeN(D(), n, act, t))}?`, "Push", () =>
-          setTrack(plan.postpone(D(), n, act, today())),
-        );
+    case "open-session":
+      if (isActivity(act)) openSession(n, act);
       return;
-    case "chip-back": {
-      if (!isActivity(act)) return;
-      const ci = plan.carriedIn(D(), n, act);
-      if (ci) ask(`Move ${ACTS[act].label} back to ${plan.dayLabel(D(), ci.from)}?`, "Move back", () => setTrack(plan.moveBack(D(), n, act)));
+    case "sess-close":
+      return closeSession();
+    case "sess-check":
+      if (state.session) setTrack(plan.toggleCheck(D(), state.session.n, state.session.a));
       return;
+    case "sess-push": {
+      const s = state.session;
+      if (!s) return;
+      flushNote();
+      const to = plan.nextFreeN(D(), s.n, s.a, t);
+      const track = plan.postpone(D(), s.n, s.a, t);
+      state.session = { n: to, a: s.a };
+      return setTrack(track);
+    }
+    case "sess-back": {
+      const s = state.session;
+      const ci = s && plan.carriedIn(D(), s.n, s.a);
+      if (!s || !ci) return;
+      flushNote();
+      const track = plan.moveBack(D(), s.n, s.a);
+      state.session = { n: ci.from, a: s.a };
+      return setTrack(track);
     }
     case "finish-day": {
       const an = plan.activeN(D(), t);
@@ -269,6 +331,20 @@ document.addEventListener("click", (e) => {
   }
 });
 
+document.addEventListener("input", (e) => {
+  const el = e.target as HTMLTextAreaElement;
+  if (el.id !== "sessNote") return;
+  const a = el.dataset.a;
+  if (!isActivity(a)) return;
+  pendingNote = { n: Number(el.dataset.n), a, text: el.value };
+  setNoteStatus("Saving…");
+  clearTimeout(noteTimer);
+  noteTimer = window.setTimeout(flushNote, 600);
+});
+document.addEventListener("focusout", (e) => {
+  if ((e.target as HTMLElement).id === "sessNote") flushNote();
+});
+
 document.addEventListener("change", (e) => {
   const inp = e.target as HTMLInputElement;
   if (inp.id === "importFile" && inp.files && inp.files[0]) {
@@ -345,6 +421,7 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "Escape" && askOpen()) closeAsk(false);
 });
 document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") flushNote();
   if (document.visibilityState === "visible") {
     onVisible();
     // A new calendar day may have started while the app was in the background.

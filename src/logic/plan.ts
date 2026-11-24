@@ -118,17 +118,60 @@ export function nextFreeN(d: Data, n: number, a: Activity, today: string): numbe
   return n + 1;
 }
 
+/* ---------- Notes ---------- */
+
+export function noteFor(d: Data, n: number, a: Activity): string {
+  return (d.track.notes && d.track.notes["n" + n] && d.track.notes["n" + n][a]) || "";
+}
+
+/** Set (or clear, when blank) the note for activity a on training day n. */
+export function setNote(d: Data, n: number, a: Activity, text: string): Track {
+  const notes = { ...(d.track.notes || {}) };
+  const k = "n" + n;
+  const day = { ...(notes[k] || {}) };
+  if (text.trim()) day[a] = text;
+  else delete day[a];
+  if (Object.keys(day).length) notes[k] = day;
+  else delete notes[k];
+  const t: Track = { ...d.track, notes };
+  if (!Object.keys(notes).length) delete t.notes;
+  return t;
+}
+
+/** A note belongs to the session, so it travels with it when the session is pushed or moved back. */
+function moveNote(d: Data, track: Track, a: Activity, from: number, to: number): Track {
+  const text = noteFor(d, from, a);
+  if (!text || from === to) return track;
+  const at = { ...d, track };
+  const existing = noteFor(at, to, a);
+  const moved = setNote(at, from, a, "");
+  return setNote({ ...d, track: moved }, to, a, existing ? existing + "\n" + text : text);
+}
+
 export function postpone(d: Data, n: number, a: Activity, today: string): Track {
   const to = nextFreeN(d, n, a, today);
   const C: Carry[] = clone(carry(d));
   const chained = C.find((c) => c.to === n && c.a === a);
   if (chained) chained.to = to;
   else C.push({ a, from: n, to });
-  return { ...d.track, carry: C.filter((c) => c.to >= activeN(d, today) - 30) };
+  const track = { ...d.track, carry: C.filter((c) => c.to >= activeN(d, today) - 30) };
+  return moveNote(d, track, a, n, to);
+}
+
+/**
+ * A push can only be undone while its original day is still open. A finished day keeps the
+ * list it was finished with, so moving a session back onto it would make the session vanish.
+ */
+export function canMoveBack(d: Data, n: number, a: Activity): boolean {
+  const ci = carriedIn(d, n, a);
+  return !!ci && !entryN(d, ci.from);
 }
 
 export function moveBack(d: Data, n: number, a: Activity): Track {
-  return { ...d.track, carry: carry(d).filter((c) => !(c.to === n && c.a === a)) };
+  const ci = carriedIn(d, n, a);
+  if (ci && entryN(d, ci.from)) return d.track;
+  const track = { ...d.track, carry: carry(d).filter((c) => !(c.to === n && c.a === a)) };
+  return ci ? moveNote(d, track, a, n, ci.from) : track;
 }
 
 export function finishDay(d: Data, today: string): Track {

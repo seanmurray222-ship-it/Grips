@@ -3,7 +3,7 @@ import { DEFAULT_SETTINGS, clone } from "./defaults";
 import { emptyTrack, mergeSettings, readTrack } from "./logic/data";
 import { todayStr } from "./logic/dates";
 import { pruneDone } from "./logic/plan";
-import type { Data, Gripper, Hand, Session } from "./types";
+import type { Activity, Data, Gripper, Hand, Session } from "./types";
 
 export type View = "today" | "log" | "plan" | "curve" | "settings";
 
@@ -25,6 +25,8 @@ export const state = {
   showForm: false,
   editPlan: false,
   editProgram: false,
+  /** The open session page (Plan tab), or null. */
+  session: null as null | { n: number; a: Activity },
 };
 
 export const today = () => todayStr();

@@ -2,6 +2,7 @@ import { ACTS, GRIPPERS } from "../defaults";
 import { fit, nextZoneIndex, otherHand, recentTrend, sessionCount, suggest, zoneCounts } from "../logic/curve";
 import {
   activeN,
+  canMoveBack,
   carriedIn,
   carriedOut,
   dayLabel,
@@ -23,7 +24,9 @@ function itemActions(n: number, a: Activity): string {
   const d = state.data, t = today();
   const ci = carriedIn(d, n, a);
   if (ci)
-    return `<div class="ck-m">Pushed from ${dayLabel(d, ci.from)}. <button class="linkbtn" data-action="move-back" data-n="${n}" data-a="${a}">Move back</button></div>`;
+    return canMoveBack(d, n, a)
+      ? `<div class="ck-m">Pushed from ${dayLabel(d, ci.from)}. <button class="linkbtn" data-action="move-back" data-n="${n}" data-a="${a}">Move back</button></div>`
+      : `<div class="ck-m">Pushed from ${dayLabel(d, ci.from)}.</div>`;
   if (isDoneN(d, n, a, t)) return "";
   return `<div class="ck-m"><button class="linkbtn" data-action="postpone" data-n="${n}" data-a="${a}">Push to ${dayLabel(d, nextFreeN(d, n, a, t))}</button></div>`;
 }

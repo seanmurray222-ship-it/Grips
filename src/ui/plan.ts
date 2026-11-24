@@ -1,4 +1,4 @@
-import { ACTS, ACT_ORDER } from "../defaults";
+import { ACTS, ACT_ORDER, GUIDE } from "../defaults";
 import { fmtDate, shortDate } from "../logic/dates";
 import {
   activeN,
@@ -8,6 +8,7 @@ import {
   isDoneN,
   isRestWeek,
   itemsFor,
+  noteFor,
   programInfo,
   recentStats,
   seq,
@@ -54,15 +55,13 @@ function programCard(): string {
     <button class="btn" data-action="prog-edit">Edit</button></div>`;
 }
 
-function chipFor(n: number, a: Activity, tappable: boolean): string {
+/** A session chip. Tapping it opens the session page (what it includes, done tick, note). */
+function chipFor(n: number, a: Activity): string {
   const d = state.data;
-  const on = isDoneN(d, n, a, today()), ci = carriedIn(d, n, a);
-  const label = `${on ? "✓ " : ""}${ci ? "↪ " : ""}${ACTS[a].label}`;
-  if (tappable && !on)
-    return ci
-      ? `<button class="dchip moved" data-action="chip-back" data-n="${n}" data-a="${a}" aria-label="${ACTS[a].label}, pushed from ${dayLabel(d, ci.from)}. Tap to move back.">${label}</button>`
-      : `<button class="dchip" data-action="chip-postpone" data-n="${n}" data-a="${a}" aria-label="${ACTS[a].label}. Tap to push to a later day.">${label}</button>`;
-  return `<span class="dchip${on ? " on" : ""}${ci ? " moved" : ""}">${label}</span>`;
+  const on = isDoneN(d, n, a, today()), ci = carriedIn(d, n, a), note = !!noteFor(d, n, a);
+  const label = `${on ? "✓ " : ""}${ci ? "↪ " : ""}${ACTS[a].label}${note ? ` <span class="chip-note" aria-hidden="true">✎</span>` : ""}`;
+  const desc = [on ? "done" : "", ci ? `pushed from ${dayLabel(d, ci.from)}` : "", note ? "has a note" : ""].filter(Boolean).join(", ");
+  return `<button class="dchip${on ? " on" : ""}${ci ? " moved" : ""}" data-action="open-session" data-n="${n}" data-a="${a}" aria-label="${ACTS[a].label}, ${dayLabel(d, n)}${desc ? ", " + desc : ""}. Open session.">${label}</button>`;
 }
 
 export function viewPlan(): string {
@@ -87,7 +86,7 @@ export function viewPlan(): string {
         const items = itemsFor(d, n, t), outs = carriedOut(d, n), rw = isRestWeek(d, n, t);
         const when = i === 0 ? (e ? "Next" : "Today") : "Then";
         let b = items.length
-          ? `<div class="dchips">${rw ? `<span class="small muted" style="align-self:center">Rest week:</span>` : ""}${items.map((a) => chipFor(n, a, true)).join("")}</div>`
+          ? `<div class="dchips">${rw ? `<span class="small muted" style="align-self:center">Rest week:</span>` : ""}${items.map((a) => chipFor(n, a)).join("")}</div>`
           : `<p class="small muted" style="margin:4px 0 0">${rw ? "Rest week" : "Rest"}</p>`;
         if (outs.length)
           b += `<p class="small muted" style="margin:6px 0 0">${outs.map((c) => `${ACTS[c.a] ? ACTS[c.a].label : c.a} → ${dayLabel(d, c.to)}`).join(", ")}</p>`;
@@ -100,13 +99,13 @@ export function viewPlan(): string {
       .map((x) => {
         const its = itemsFor(d, x.n, t);
         return `<li class="day"><div class="dname"><b>Day ${x.idx + 1}</b><span>${shortDate(x.date)}</span></div>
-      <div>${its.length ? `<div class="dchips">${its.map((a) => chipFor(x.n, a, false)).join("")}</div>` : `<p class="small muted" style="margin:4px 0 0">Rest</p>`}</div></li>`;
+      <div>${its.length ? `<div class="dchips">${its.map((a) => chipFor(x.n, a)).join("")}</div>` : `<p class="small muted" style="margin:4px 0 0">Rest</p>`}</div></li>`;
       })
       .join("");
     body = `${programCard()}
     ${st.days ? `<p class="adh"><b>${st.planned ? Math.round((st.done / st.planned) * 100) : 100}%</b> <span class="muted">Last 7 days: ${st.days} training day${st.days === 1 ? "" : "s"} finished, ${st.done} of ${st.planned} sessions done.</span></p>` : ""}
     <h2 style="margin-top:6px">Up next</h2>
-    <p class="small muted" style="margin:-4px 0 10px">The rotation only moves forward when you finish a day, so missed days never pile up. Tap a session to push it to a later day.</p>
+    <p class="small muted" style="margin:-4px 0 10px">The rotation only moves forward when you finish a day, so missed days never pile up. Tap a session to see what it includes, tick it off, add a note or push it to a later day.</p>
     <ul class="week">${up}</ul>
     ${recent ? `<h2>Recent</h2><ul class="week">${recent}</ul>` : ""}`;
   }
@@ -116,13 +115,6 @@ export function viewPlan(): string {
   ${body}
   <h2>What each session includes</h2>
   <dl class="guide">
-    <dt>Grippers</dt><dd>Prometheus first, then Sisyphus, both hands. Follow each gripper’s next zone on Today. Train fresh, never right after climbing.</dd>
-    <dt>Tension board</dt><dd>15 min warm-up on easy problems. 40–50 min on problems near your limit, 3 to 5 attempts each, 3 min rest. Keep both feet on and hold every foot placement for a beat before moving. Finish with 10 min core: hollow holds and hanging knee raises.</dd>
-    <dt>Strength A</dt><dd>Goblet or front squat 3×6–8, Romanian deadlift 3×6–8 (straps are fine), push-ups or dumbbell press 3×8–10, overhead press 3×8. Core: ab wheel 3×6–10, dead bug 3×8 each side.</dd>
-    <dt>Strength B</dt><dd>Pull-ups 4×4–6, one-arm row 3×8, Bulgarian split squat 3×8 each leg. Core: tuck front lever holds 4×8–10 s, hanging leg raises 3×6–10, Pallof press 3×10 each side.</dd>
-    <dt>Open climbing</dt><dd>A freer gym session: projects, volume or climbing with friends. Treat it like a board day for recovery, so no gripper session straight after.</dd>
-    <dt>Outdoor climbing</dt><dd>Real rock is usually the hardest climbing day of the week. Skip lifting that day and keep the next day easy if your fingers are worked.</dd>
-    <dt>Easy cardio</dt><dd>30–45 min where you can still talk in full sentences. Bike or incline walk, so your forearms get a break.</dd>
-    <dt>Mobility</dt><dd>Easy stretching or a walk. Nothing that tires your fingers.</dd>
+    ${ACT_ORDER.map((a) => `<dt>${ACTS[a].label}</dt><dd>${GUIDE[a]}</dd>`).join("")}
   </dl>`;
 }

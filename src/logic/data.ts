@@ -38,6 +38,17 @@ export function readTrack(d: any): Track {
     });
   if (Array.isArray(d.days)) t.days = clone(d.days as Track["days"]).sort((a, b) => a.n - b.n);
   if (Array.isArray(d.carry)) t.carry = clone(d.carry as Track["carry"]);
+  if (d.notes && typeof d.notes === "object") {
+    const notes: NonNullable<Track["notes"]> = {};
+    Object.keys(d.notes).forEach((k) => {
+      const day = d.notes[k];
+      if (k[0] !== "n" || !day || typeof day !== "object") return;
+      Object.keys(day).forEach((a) => {
+        if (isActivity(a) && typeof day[a] === "string" && day[a].trim()) (notes[k] = notes[k] || {})[a] = day[a];
+      });
+    });
+    if (Object.keys(notes).length) t.notes = notes;
+  }
   return t;
 }
 

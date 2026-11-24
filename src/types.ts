@@ -56,6 +56,8 @@ export interface Track {
   days: TrackDay[];
   carry: Carry[];
   done: Record<string, Partial<Record<Activity, true>>>;
+  /** Free-text notes per training day and activity, keyed like `done` ("n" + day number). */
+  notes?: Record<string, Partial<Record<Activity, string>>>;
 }
 
 /** Everything the logic needs, plus "today" so it can be tested. */

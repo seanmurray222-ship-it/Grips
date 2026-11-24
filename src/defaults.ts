@@ -23,6 +23,20 @@ export const ACTS: Record<Activity, { label: string; desc: string }> = {
   mobility: { label: "Mobility", desc: "Easy stretching or a walk." },
 };
 
+/** What each session includes, shown on the session page and in the Plan guide. */
+export const GUIDE: Record<Activity, string> = {
+  grip: "Prometheus first, then Sisyphus, both hands. Follow each gripper’s next zone on Today. Train fresh, never right after climbing.",
+  board:
+    "15 min warm-up on easy problems. 40–50 min on problems near your limit, 3 to 5 attempts each, 3 min rest. Keep both feet on and hold every foot placement for a beat before moving. Finish with 10 min core: hollow holds and hanging knee raises.",
+  open: "A freer gym session: projects, volume or climbing with friends. Treat it like a board day for recovery, so no gripper session straight after.",
+  outdoor:
+    "Real rock is usually the hardest climbing day of the week. Skip lifting that day and keep the next day easy if your fingers are worked.",
+  strA: "Goblet or front squat 3×6–8, Romanian deadlift 3×6–8 (straps are fine), push-ups or dumbbell press 3×8–10, overhead press 3×8. Core: ab wheel 3×6–10, dead bug 3×8 each side.",
+  strB: "Pull-ups 4×4–6, one-arm row 3×8, Bulgarian split squat 3×8 each leg. Core: tuck front lever holds 4×8–10 s, hanging leg raises 3×6–10, Pallof press 3×10 each side.",
+  cardio: "30–45 min where you can still talk in full sentences. Bike or incline walk, so your forearms get a break.",
+  mobility: "Easy stretching or a walk. Nothing that tires your fingers.",
+};
+
 export const ACT_ORDER: Activity[] = ["grip", "board", "open", "outdoor", "strA", "strB", "cardio", "mobility"];
 
 export function isActivity(a: unknown): a is Activity {
