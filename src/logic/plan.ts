@@ -1,5 +1,5 @@
-import { ACT_ORDER, DEFAULT_SEQ, DEFAULT_SETTINGS, GRIPPERS, clone, isActivity } from "../defaults";
-import type { Activity, Carry, Data, Gripper, Hand, Program, Track, TrackDay } from "../types";
+import { ACT_ORDER, CLIMBS, DEFAULT_SEQ, DEFAULT_SETTINGS, GRIPPERS, GUIDE, clone, isActivity } from "../defaults";
+import type { Activity, Carry, Data, Gripper, Hand, Program, Settings, Track, TrackDay } from "../types";
 import { gOf } from "./curve";
 import { dayNum, numToStr } from "./dates";
 
@@ -102,12 +102,20 @@ export function gripStatusN(d: Data, n: number, today: string): Record<Gripper, 
   return r;
 }
 
-export function isDoneN(d: Data, n: number, a: Activity, today: string): boolean {
-  if (a === "grip") {
-    const st = gripStatusN(d, n, today);
-    return GRIPPERS.every((g) => st[g.id].size > 0);
-  }
+/** Grippers tick themselves once a session is logged on each gripper in the day's window. */
+export function gripAutoN(d: Data, n: number, today: string): boolean {
+  const st = gripStatusN(d, n, today);
+  return GRIPPERS.every((g) => st[g.id].size > 0);
+}
+
+/** Ticked by hand. For grip this is the manual override when the logged sessions don't cover it. */
+export function isTickedN(d: Data, n: number, a: Activity): boolean {
   return !!(d.track.done["n" + n] && d.track.done["n" + n][a]);
+}
+
+export function isDoneN(d: Data, n: number, a: Activity, today: string): boolean {
+  if (a === "grip" && gripAutoN(d, n, today)) return true;
+  return isTickedN(d, n, a);
 }
 
 /** The next training day after n that doesn't already have activity a. */
@@ -138,10 +146,65 @@ export function setNote(d: Data, n: number, a: Activity, text: string): Track {
   return t;
 }
 
-/** A note belongs to the session, so it travels with it when the session is pushed or moved back. */
+/* ---------- Climbing type ---------- */
+
+/** What a climbing slot is being done as on day n (Tension board, indoor or outdoor). Other activities are themselves. */
+export function climbFor(d: Data, n: number, a: Activity): Activity {
+  if (!CLIMBS.includes(a)) return a;
+  const k = d.track.climb && d.track.climb["n" + n] && d.track.climb["n" + n][a];
+  return k && CLIMBS.includes(k) ? k : a;
+}
+
+/** Choose what climbing slot a on day n is done as. Choosing a itself clears the choice. */
+export function setClimb(d: Data, n: number, a: Activity, kind: Activity): Track {
+  if (!CLIMBS.includes(a) || !CLIMBS.includes(kind)) return d.track;
+  const climb = { ...(d.track.climb || {}) };
+  const k = "n" + n;
+  const day = { ...(climb[k] || {}) };
+  if (kind === a) delete day[a];
+  else day[a] = kind;
+  if (Object.keys(day).length) climb[k] = day;
+  else delete climb[k];
+  const t: Track = { ...d.track, climb };
+  if (!Object.keys(climb).length) delete t.climb;
+  return t;
+}
+
+/* ---------- Session guides ---------- */
+
+export function guideFor(s: Settings, a: Activity): string {
+  const g = s.guides && s.guides[a];
+  return typeof g === "string" && g.trim() ? g : GUIDE[a];
+}
+
+export function isCustomGuide(s: Settings, a: Activity): boolean {
+  return guideFor(s, a) !== GUIDE[a];
+}
+
+/** Save your own guide text for a. Blank text, or the built-in text, goes back to the built-in guide. */
+export function setGuide(s: Settings, a: Activity, text: string): Settings {
+  const guides = { ...(s.guides || {}) };
+  const t = text.trim();
+  if (!t || t === GUIDE[a]) delete guides[a];
+  else guides[a] = t;
+  const out: Settings = { ...s, guides };
+  if (!Object.keys(guides).length) delete out.guides;
+  return out;
+}
+
+/**
+ * A note and the climbing choice belong to the session, so they travel with it when it's
+ * pushed or moved back.
+ */
 function moveNote(d: Data, track: Track, a: Activity, from: number, to: number): Track {
+  if (from === to) return track;
+  const kind = climbFor({ ...d, track }, from, a);
+  if (kind !== a) {
+    track = setClimb({ ...d, track }, from, a, a);
+    track = setClimb({ ...d, track }, to, a, kind);
+  }
   const text = noteFor(d, from, a);
-  if (!text || from === to) return track;
+  if (!text) return track;
   const at = { ...d, track };
   const existing = noteFor(at, to, a);
   const moved = setNote(at, from, a, "");

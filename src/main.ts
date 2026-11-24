@@ -142,6 +142,7 @@ function openSession(n: number, a: Activity) {
   flushNote();
   listScrollY = window.scrollY;
   state.session = { n, a };
+  state.editGuide = false;
   history.pushState({ og: "session" }, "");
   render();
   window.scrollTo(0, 0);
@@ -151,6 +152,7 @@ function closeSession(viaHistory = false) {
   flushNote();
   if (!state.session) return;
   state.session = null;
+  state.editGuide = false;
   if (!viaHistory && history.state && history.state.og === "session") history.back();
   render();
   window.scrollTo(0, listScrollY);
@@ -213,6 +215,35 @@ document.addEventListener("click", (e) => {
     case "sess-check":
       if (state.session) setTrack(plan.toggleCheck(D(), state.session.n, state.session.a));
       return;
+    case "sess-kind": {
+      const k = el.dataset.k;
+      if (state.session && isActivity(k)) setTrack(plan.setClimb(D(), state.session.n, state.session.a, k));
+      return;
+    }
+    case "guide-edit":
+      state.editGuide = true;
+      render();
+      document.getElementById("guideEdit")?.focus();
+      return;
+    case "guide-cancel":
+      state.editGuide = false;
+      return render();
+    case "guide-save": {
+      const box = document.getElementById("guideEdit") as HTMLTextAreaElement | null;
+      if (!box || !isActivity(act)) return;
+      state.data.settings = plan.setGuide(D().settings, act, box.value);
+      state.editGuide = false;
+      void saveSettings();
+      return render();
+    }
+    case "guide-reset":
+      if (!isActivity(act)) return;
+      return ask(`Replace your ${ACTS[act].label} with the suggested one?`, "Restore", () => {
+        state.data.settings = plan.setGuide(D().settings, act, "");
+        state.editGuide = false;
+        void saveSettings();
+        render();
+      });
     case "sess-push": {
       const s = state.session;
       if (!s) return;
@@ -237,7 +268,7 @@ document.addEventListener("click", (e) => {
       const finish = () => setTrack(plan.finishDay(D(), today()));
       if (left.length)
         ask(
-          `Finish ${plan.dayLabel(D(), an)} with ${left.map((x) => ACTS[x].label).join(", ")} not done? To keep a session for later, use Push instead.`,
+          `Finish ${plan.dayLabel(D(), an)} with ${left.map((x) => ACTS[plan.climbFor(D(), an, x)].label).join(", ")} not done? To keep a session for later, use Push instead.`,
           `Finish ${plan.dayLabel(D(), an)}`,
           finish,
         );
@@ -321,9 +352,10 @@ document.addEventListener("click", (e) => {
       return;
     }
     case "reset-settings":
-      return ask("Restore the default zones and settings? Your rotation and program stay as they are.", "Restore", () => {
-        const { seq, program } = state.data.settings;
+      return ask("Restore the default zones and settings? Your rotation, program and Strength A and B stay as they are.", "Restore", () => {
+        const { seq, program, guides } = state.data.settings;
         state.data.settings = { ...clone(DEFAULT_SETTINGS), seq, program };
+        if (guides) state.data.settings.guides = guides;
         void saveSettings();
         render();
       });
@@ -453,7 +485,7 @@ void load().then(() => {
 function busy(): boolean {
   const a = document.activeElement;
   const typing = !!a && (a.tagName === "INPUT" || a.tagName === "TEXTAREA" || a.tagName === "SELECT");
-  return T.open || askOpen() || !!pendingNote || typing || state.showForm || state.editProgram;
+  return T.open || askOpen() || !!pendingNote || typing || state.showForm || state.editProgram || state.editGuide;
 }
 function applyUpdate() {
   flushNote();

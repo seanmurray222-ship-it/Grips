@@ -5,7 +5,9 @@ import {
   canMoveBack,
   carriedIn,
   carriedOut,
+  climbFor,
   dayLabel,
+  gripAutoN,
   gripStatusN,
   isDoneN,
   isRestWeek,
@@ -41,23 +43,25 @@ function planItem(n: number, a: Activity, interactive: boolean): string {
   const on = isDoneN(d, n, a, t);
   const note = noteFor(d, n, a);
   const notePreview = note ? `<span class="ck-note">✎ ${esc(note)}</span>` : "";
+  const label = ACTS[climbFor(d, n, a)].label;
   let detail: string;
-  let box: string;
+  // Grippers tick themselves from logged sessions; until then they can be ticked by hand.
+  const auto = a === "grip" && gripAutoN(d, n, t);
   if (a === "grip") {
     const st = gripStatusN(d, n, t);
     detail = `<span class="ck-d">${GRIPPERS.map(
       (g) => `<span class="gstat">${gtag(g.id)}${(["LH", "RH"] as Hand[]).map((h) => (st[g.id].has(h) ? h + " ✓" : h + " –")).join("  ")}</span>`,
     ).join("")}</span>
-      <span class="ck-d">Ticks itself when you log a session on each gripper.</span>`;
-    box = `<span class="box${on ? " on" : ""}" aria-hidden="true">${on ? "✓" : ""}</span>`;
+      <span class="ck-d">${auto ? "Ticked itself from your logged sessions." : on ? "Ticked by hand." : "Ticks itself when you log a session on each gripper, or tick it by hand."}</span>`;
   } else {
-    detail = `<span class="ck-d">${ACTS[a].desc}</span>`;
-    box = interactive
-      ? `<button class="box${on ? " on" : ""}" data-action="check" data-n="${n}" data-a="${a}" aria-pressed="${on}" aria-label="${on ? "Unmark" : "Mark"} ${ACTS[a].label} done">${on ? "✓" : ""}</button>`
-      : `<span class="box${on ? " on" : ""}" aria-hidden="true">${on ? "✓" : ""}</span>`;
+    detail = `<span class="ck-d">${ACTS[climbFor(d, n, a)].desc}</span>`;
   }
-  const open = `<button class="ck-open" data-action="open-session" data-n="${n}" data-a="${a}" aria-label="${ACTS[a].label}${on ? ", done" : ""}${note ? ", has a note" : ""}. Open session details and notes.">
-      <span class="ck-text"><span class="ck-l">${ACTS[a].label}</span>${detail}${notePreview}</span>
+  const box =
+    interactive && !auto
+      ? `<button class="box${on ? " on" : ""}" data-action="check" data-n="${n}" data-a="${a}" aria-pressed="${on}" aria-label="${on ? "Unmark" : "Mark"} ${label} done">${on ? "✓" : ""}</button>`
+      : `<span class="box${on ? " on" : ""}" aria-hidden="true">${on ? "✓" : ""}</span>`;
+  const open = `<button class="ck-open" data-action="open-session" data-n="${n}" data-a="${a}" aria-label="${label}${on ? ", done" : ""}${note ? ", has a note" : ""}. Open session details and notes.">
+      <span class="ck-text"><span class="ck-l">${label}</span>${detail}${notePreview}</span>
       <span class="ck-go" aria-hidden="true">›</span>
     </button>`;
   return `<li class="ck">${box}<div>${open}${interactive ? itemActions(n, a) : ""}</div></li>`;

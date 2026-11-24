@@ -37,6 +37,8 @@ export interface Settings {
   starterCount: number;
   seq: Activity[][];
   program: Program;
+  /** Your own text for "What this session includes", replacing the built-in guide. */
+  guides?: Partial<Record<Activity, string>>;
 }
 
 export interface TrackDay {
@@ -58,6 +60,8 @@ export interface Track {
   done: Record<string, Partial<Record<Activity, true>>>;
   /** Free-text notes per training day and activity, keyed like `done` ("n" + day number). */
   notes?: Record<string, Partial<Record<Activity, string>>>;
+  /** Which kind of climbing a climbing slot became on a day (e.g. board → outdoor), keyed like `done`. */
+  climb?: Record<string, Partial<Record<Activity, Activity>>>;
 }
 
 /** Everything the logic needs, plus "today" so it can be tested. */

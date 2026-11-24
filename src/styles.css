@@ -218,7 +218,14 @@ button.sess-done:active { transform: translateY(1px); }
 .sess-note-l { font-family: var(--display); font-weight: 700; font-size: 22px; }
 .sess-note-l .small { font-family: var(--body); font-weight: 500; margin-left: 6px; }
 .sess-note textarea { width: 100%; min-height: 120px; resize: vertical; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--ink); padding: 12px; font-size: 16px; line-height: 1.45; }
-.sess-guide { margin: 0; font-size: 16px; }
+.sess-guide { margin: 0; font-size: 16px; white-space: pre-line; }
+.sess-guide-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin: 22px 0 8px; }
+.sess-guide-head h2 { margin: 0; }
+.sess-guide-btns { margin-top: 10px; }
+.sess-kind { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin: 0 0 14px; }
+.sess-kind button { min-height: 52px; padding: 6px 4px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--ink); font-weight: 700; font-size: 15px; line-height: 1.15; }
+.sess-kind button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+.guide dd { white-space: pre-line; }
 
 .guide { margin: 0; }
 .guide dt { font-weight: 700; margin-top: 12px; }

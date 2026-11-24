@@ -1,4 +1,4 @@
-import { DEFAULT_SEQ, DEFAULT_SETTINGS, clone, isActivity } from "../defaults";
+import { CLIMBS, DEFAULT_SEQ, DEFAULT_SETTINGS, clone, isActivity } from "../defaults";
 import type { Data, ExportFile, Session, Settings, Track } from "../types";
 
 /** Fill in defaults and migrate older settings shapes, as the prototype does. */
@@ -22,6 +22,13 @@ export function mergeSettings(d: any): Settings {
   delete s.program.postponed;
   delete s.program.moved;
   if (!Array.isArray(s.zones) || !s.zones.length) s.zones = clone(DEFAULT_SETTINGS.zones);
+  const guides: Record<string, string> = {};
+  if (s.guides && typeof s.guides === "object")
+    Object.keys(s.guides).forEach((a) => {
+      if (isActivity(a) && typeof s.guides[a] === "string" && s.guides[a].trim()) guides[a] = s.guides[a];
+    });
+  if (Object.keys(guides).length) s.guides = guides;
+  else delete s.guides;
   return s as Settings;
 }
 
@@ -48,6 +55,17 @@ export function readTrack(d: any): Track {
       });
     });
     if (Object.keys(notes).length) t.notes = notes;
+  }
+  if (d.climb && typeof d.climb === "object") {
+    const climb: NonNullable<Track["climb"]> = {};
+    Object.keys(d.climb).forEach((k) => {
+      const day = d.climb[k];
+      if (k[0] !== "n" || !day || typeof day !== "object") return;
+      Object.keys(day).forEach((a) => {
+        if (isActivity(a) && CLIMBS.includes(a) && CLIMBS.includes(day[a]) && day[a] !== a) (climb[k] = climb[k] || {})[a] = day[a];
+      });
+    });
+    if (Object.keys(climb).length) t.climb = climb;
   }
   return t;
 }

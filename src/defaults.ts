@@ -15,7 +15,7 @@ export const GRIPPERS: GripperInfo[] = [
 export const ACTS: Record<Activity, { label: string; desc: string }> = {
   grip: { label: "Grippers", desc: "Prometheus, then Sisyphus. Both hands." },
   board: { label: "Tension board", desc: "Warm up, limit problems, then 10 min core." },
-  open: { label: "Open climbing", desc: "Gym session on whatever you like. Mix volume with a few hard tries." },
+  open: { label: "Indoor climbing", desc: "Gym session on whatever you like. Mix volume with a few hard tries." },
   outdoor: { label: "Outdoor climbing", desc: "A day on real rock. Warm up well and count it as a hard climbing day." },
   strA: { label: "Strength A", desc: "Legs, push, core." },
   strB: { label: "Strength B", desc: "Pull, posterior chain, core." },
@@ -36,6 +36,11 @@ export const GUIDE: Record<Activity, string> = {
   cardio: "30–45 min where you can still talk in full sentences. Bike or incline walk, so your forearms get a break.",
   mobility: "Easy stretching or a walk. Nothing that tires your fingers.",
 };
+
+/** Sessions whose "What this session includes" text you can rewrite. */
+export const EDITABLE_GUIDES: Activity[] = ["strA", "strB"];
+/** Climbing sessions: any of these slots can be done as any of the others on the day. */
+export const CLIMBS: Activity[] = ["board", "open", "outdoor"];
 
 export const ACT_ORDER: Activity[] = ["grip", "board", "open", "outdoor", "strA", "strB", "cardio", "mobility"];
 

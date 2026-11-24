@@ -27,6 +27,7 @@ export const state = {
   showForm: false,
   editPlan: false,
   editProgram: false,
+  editGuide: false,
   /** The open session page, or null. It sits on top of whichever tab opened it. */
   session: null as null | { n: number; a: Activity },
 };

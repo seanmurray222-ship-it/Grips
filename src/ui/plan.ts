@@ -1,10 +1,12 @@
-import { ACTS, ACT_ORDER, GUIDE } from "../defaults";
+import { ACTS, ACT_ORDER } from "../defaults";
 import { fmtDate, shortDate } from "../logic/dates";
 import {
   activeN,
   carriedIn,
   carriedOut,
+  climbFor,
   dayLabel,
+  guideFor,
   isDoneN,
   isRestWeek,
   itemsFor,
@@ -59,9 +61,10 @@ function programCard(): string {
 function chipFor(n: number, a: Activity): string {
   const d = state.data;
   const on = isDoneN(d, n, a, today()), ci = carriedIn(d, n, a), note = !!noteFor(d, n, a);
-  const label = `${on ? "✓ " : ""}${ci ? "↪ " : ""}${ACTS[a].label}${note ? ` <span class="chip-note" aria-hidden="true">✎</span>` : ""}`;
+  const name = ACTS[climbFor(d, n, a)].label;
+  const label = `${on ? "✓ " : ""}${ci ? "↪ " : ""}${name}${note ? ` <span class="chip-note" aria-hidden="true">✎</span>` : ""}`;
   const desc = [on ? "done" : "", ci ? `pushed from ${dayLabel(d, ci.from)}` : "", note ? "has a note" : ""].filter(Boolean).join(", ");
-  return `<button class="dchip${on ? " on" : ""}${ci ? " moved" : ""}" data-action="open-session" data-n="${n}" data-a="${a}" aria-label="${ACTS[a].label}, ${dayLabel(d, n)}${desc ? ", " + desc : ""}. Open session.">${label}</button>`;
+  return `<button class="dchip${on ? " on" : ""}${ci ? " moved" : ""}" data-action="open-session" data-n="${n}" data-a="${a}" aria-label="${name}, ${dayLabel(d, n)}${desc ? ", " + desc : ""}. Open session.">${label}</button>`;
 }
 
 export function viewPlan(): string {
@@ -115,6 +118,6 @@ export function viewPlan(): string {
   ${body}
   <h2>What each session includes</h2>
   <dl class="guide">
-    ${ACT_ORDER.map((a) => `<dt>${ACTS[a].label}</dt><dd>${GUIDE[a]}</dd>`).join("")}
+    ${ACT_ORDER.map((a) => `<dt>${ACTS[a].label}</dt><dd>${esc(guideFor(state.data.settings, a))}</dd>`).join("")}
   </dl>`;
 }
