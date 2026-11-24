@@ -46,6 +46,7 @@ main { max-width: 560px; margin: 0 auto; overflow-x: clip; padding: calc(14px + 
 .top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 4px 0 14px; flex-wrap: wrap; }
 .notice { background: var(--surface-2); border-left: 4px solid var(--z1); padding: 10px 12px; border-radius: 6px; font-size: 15px; margin-bottom: 14px; }
 .notice.err { border-left-color: var(--danger); }
+.notice.update { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-left-color: var(--accent); }
 
 h1, h2 { font-family: var(--display); font-weight: 700; margin: 0; line-height: 1.05; }
 h1.page { font-size: 34px; }

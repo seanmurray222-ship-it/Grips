@@ -37,6 +37,7 @@ import { T, closeTimer, onVisible, openTimer, setRerender, stepWeight, tDrop, tS
 import { viewToday } from "./ui/today";
 
 const app = document.getElementById("app")!;
+const UPDATE_BANNER = `<div class="notice update" role="status"><span>A new version of the app is ready.</span><button class="btn primary" data-action="reload-app">Update now</button></div>`;
 
 let renderedDay = "";
 function render() {
@@ -44,6 +45,7 @@ function render() {
   document.body.dataset.gripper = state.gripper;
   let top = "";
   if (state.error) top += `<div class="notice err" role="alert">${esc(state.error)}</div>`;
+  if (state.updateReady) top += UPDATE_BANNER;
   if (!state.loaded) {
     app.innerHTML = top + `<div class="empty-state">Loading your log…</div>`;
     updateTabs();
@@ -325,6 +327,8 @@ document.addEventListener("click", (e) => {
         void saveSettings();
         render();
       });
+    case "reload-app":
+      return applyUpdate();
     case "export":
       return doExport();
     case "import":
@@ -439,8 +443,46 @@ void load().then(() => {
   });
 });
 
+/* ---------- Updates ---------- */
+/*
+ * The app opens from its offline cache, so a new deploy is downloaded in the background by a new
+ * service worker. When that worker takes over, reload straight away if nothing is in progress;
+ * otherwise show an "Update now" banner. Without this the new version only appeared on the launch
+ * after next, which on Android can take a long time because the app often isn't fully closed.
+ */
+function busy(): boolean {
+  const a = document.activeElement;
+  const typing = !!a && (a.tagName === "INPUT" || a.tagName === "TEXTAREA" || a.tagName === "SELECT");
+  return T.open || askOpen() || !!pendingNote || typing || state.showForm || state.editProgram;
+}
+function applyUpdate() {
+  flushNote();
+  location.reload();
+}
 if ("serviceWorker" in navigator && import.meta.env.PROD) {
+  // Only an update replaces an existing controller; the very first install must not trigger a reload.
+  const hadController = !!navigator.serviceWorker.controller;
+  let reloading = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (!hadController || reloading) return;
+    if (!busy()) {
+      reloading = true;
+      applyUpdate();
+    } else if (!state.updateReady) {
+      // Insert the banner without re-rendering, so typing (and the phone keyboard) isn't interrupted.
+      state.updateReady = true;
+      app.insertAdjacentHTML("afterbegin", UPDATE_BANNER);
+    }
+  });
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register(import.meta.env.BASE_URL + "sw.js", { scope: import.meta.env.BASE_URL }).catch(() => {});
+    navigator.serviceWorker
+      .register(import.meta.env.BASE_URL + "sw.js", { scope: import.meta.env.BASE_URL })
+      .then((reg) => {
+        // Look for a new version whenever the app comes back to the foreground.
+        document.addEventListener("visibilitychange", () => {
+          if (document.visibilityState === "visible") void reg.update().catch(() => {});
+        });
+      })
+      .catch(() => {});
   });
 }

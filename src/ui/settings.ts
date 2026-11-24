@@ -85,5 +85,5 @@ export function viewSettings(): string {
       <button type="submit" class="btn primary">Save settings</button>
     </div>
   </form>
-  <p class="small muted">Open Grips Trainer ${__APP_VERSION__}. Works offline. No account, no server.</p>`;
+  <p class="small muted">Open Grips Trainer ${__APP_VERSION__}, built ${__BUILD__}. Works offline. No account, no server. The app updates itself when a new version is out.</p>`;
 }

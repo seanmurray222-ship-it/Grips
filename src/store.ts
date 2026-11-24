@@ -22,6 +22,8 @@ export const state = {
   view: "today" as View,
   loaded: false,
   error: "",
+  /** A new version has taken over but the page is busy, so we offer a reload instead of forcing one. */
+  updateReady: false,
   showForm: false,
   editPlan: false,
   editProgram: false,

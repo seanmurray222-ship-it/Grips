@@ -70,7 +70,13 @@ function pwa(): Plugin {
 
 export default defineConfig({
   base: BASE,
-  define: { __APP_VERSION__: JSON.stringify(pkg.version) },
+  define: {
+    __APP_VERSION__: JSON.stringify(pkg.version),
+    // Shown in Settings so you can tell which version a phone is running.
+    __BUILD__: JSON.stringify(
+      new Date().toISOString().slice(0, 16).replace("T", " ") + " UTC" + (process.env.GITHUB_SHA ? " · " + process.env.GITHUB_SHA.slice(0, 7) : ""),
+    ),
+  },
   plugins: [pwa()],
   build: { target: "es2020", assetsInlineLimit: 0 },
 });
