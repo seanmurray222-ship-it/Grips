@@ -11,6 +11,7 @@ import {
   isRestWeek,
   itemsFor,
   nextFreeN,
+  noteFor,
   programInfo,
   seqLen,
   todayEntry,
@@ -31,22 +32,35 @@ function itemActions(n: number, a: Activity): string {
   return `<div class="ck-m"><button class="linkbtn" data-action="postpone" data-n="${n}" data-a="${a}">Push to ${dayLabel(d, nextFreeN(d, n, a, t))}</button></div>`;
 }
 
+/**
+ * One checklist row. The box ticks it off in one tap; the rest of the row opens the session page
+ * (what it includes, the done tick and a note).
+ */
 function planItem(n: number, a: Activity, interactive: boolean): string {
   const d = state.data, t = today();
   const on = isDoneN(d, n, a, t);
+  const note = noteFor(d, n, a);
+  const notePreview = note ? `<span class="ck-note">✎ ${esc(note)}</span>` : "";
+  let detail: string;
+  let box: string;
   if (a === "grip") {
     const st = gripStatusN(d, n, t);
-    return `<li class="ck"><span class="box${on ? " on" : ""}" aria-hidden="true">${on ? "✓" : ""}</span><div>
-      <div class="ck-l">${ACTS[a].label}</div>
-      <div class="ck-d">${GRIPPERS.map(
-        (g) => `<span class="gstat">${gtag(g.id)}${(["LH", "RH"] as Hand[]).map((h) => (st[g.id].has(h) ? h + " ✓" : h + " –")).join("  ")}</span>`,
-      ).join("")}</div>
-      <div class="ck-d">Ticks itself when you log a session on each gripper.</div>${interactive ? itemActions(n, a) : ""}</div></li>`;
+    detail = `<span class="ck-d">${GRIPPERS.map(
+      (g) => `<span class="gstat">${gtag(g.id)}${(["LH", "RH"] as Hand[]).map((h) => (st[g.id].has(h) ? h + " ✓" : h + " –")).join("  ")}</span>`,
+    ).join("")}</span>
+      <span class="ck-d">Ticks itself when you log a session on each gripper.</span>`;
+    box = `<span class="box${on ? " on" : ""}" aria-hidden="true">${on ? "✓" : ""}</span>`;
+  } else {
+    detail = `<span class="ck-d">${ACTS[a].desc}</span>`;
+    box = interactive
+      ? `<button class="box${on ? " on" : ""}" data-action="check" data-n="${n}" data-a="${a}" aria-pressed="${on}" aria-label="${on ? "Unmark" : "Mark"} ${ACTS[a].label} done">${on ? "✓" : ""}</button>`
+      : `<span class="box${on ? " on" : ""}" aria-hidden="true">${on ? "✓" : ""}</span>`;
   }
-  const btn = interactive
-    ? `<button class="box${on ? " on" : ""}" data-action="check" data-n="${n}" data-a="${a}" aria-pressed="${on}" aria-label="${on ? "Unmark" : "Mark"} ${ACTS[a].label} done">${on ? "✓" : ""}</button>`
-    : `<span class="box${on ? " on" : ""}" aria-hidden="true">${on ? "✓" : ""}</span>`;
-  return `<li class="ck">${btn}<div><div class="ck-l">${ACTS[a].label}</div><div class="ck-d">${ACTS[a].desc}</div>${interactive ? itemActions(n, a) : ""}</div></li>`;
+  const open = `<button class="ck-open" data-action="open-session" data-n="${n}" data-a="${a}" aria-label="${ACTS[a].label}${on ? ", done" : ""}${note ? ", has a note" : ""}. Open session details and notes.">
+      <span class="ck-text"><span class="ck-l">${ACTS[a].label}</span>${detail}${notePreview}</span>
+      <span class="ck-go" aria-hidden="true">›</span>
+    </button>`;
+  return `<li class="ck">${box}<div>${open}${interactive ? itemActions(n, a) : ""}</div></li>`;
 }
 
 function todayPlanCard(): string {

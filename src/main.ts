@@ -49,8 +49,9 @@ function render() {
     updateTabs();
     return;
   }
-  const v =
-    state.view === "log" ? viewLog() : state.view === "curve" ? viewCurve() : state.view === "plan" ? (state.session ? viewSession(state.session.n, state.session.a) : viewPlan()) : state.view === "settings" ? viewSettings() : viewToday();
+  const v = state.session
+    ? viewSession(state.session.n, state.session.a, state.view === "today" ? "Today" : "Plan")
+    : state.view === "log" ? viewLog() : state.view === "curve" ? viewCurve() : state.view === "plan" ? viewPlan() : state.view === "settings" ? viewSettings() : viewToday();
   app.innerHTML = top + v;
   updateTabs();
 }
@@ -113,12 +114,12 @@ async function doImport(file: File) {
   }, cur > 0);
 }
 
-/* ---------- Session page (Plan tab) ---------- */
+/* ---------- Session page (opened from Today or Plan) ---------- */
 /*
  * Opening a session pushes a history entry, so Android's back gesture returns to the Plan list
- * instead of leaving the app. Notes save as you type (debounced) and whenever you leave the page.
+ * or Today instead of leaving the app. Notes save as you type (debounced) and whenever you leave the page.
  */
-let planScrollY = 0;
+let listScrollY = 0;
 let pendingNote: { n: number; a: Activity; text: string } | null = null;
 let noteTimer = 0;
 
@@ -137,7 +138,7 @@ function flushNote() {
 }
 function openSession(n: number, a: Activity) {
   flushNote();
-  planScrollY = window.scrollY;
+  listScrollY = window.scrollY;
   state.session = { n, a };
   history.pushState({ og: "session" }, "");
   render();
@@ -150,7 +151,7 @@ function closeSession(viaHistory = false) {
   state.session = null;
   if (!viaHistory && history.state && history.state.og === "session") history.back();
   render();
-  window.scrollTo(0, planScrollY);
+  window.scrollTo(0, listScrollY);
 }
 window.addEventListener("popstate", () => {
   if (state.session) closeSession(true);

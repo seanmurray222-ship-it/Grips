@@ -23,7 +23,7 @@ export function dayKind(n: number): "finished" | "current" | "future" {
 }
 
 /** One session (an activity on one training day): what it includes, a done tick and a note. */
-export function viewSession(n: number, a: Activity): string {
+export function viewSession(n: number, a: Activity, back: string): string {
   const d = state.data, t = today();
   const kind = dayKind(n);
   const e = entryN(d, n);
@@ -62,7 +62,7 @@ export function viewSession(n: number, a: Activity): string {
 
   return `
   <div class="top sess-top">
-    <button class="btn" data-action="sess-close" aria-label="Back to Plan">← Plan</button>
+    <button class="btn" data-action="sess-close" aria-label="Back to ${back}">← ${back}</button>
     <span class="small muted">${dayLabel(d, n)} · ${when}</span>
   </div>
   <h1 class="page">${ACTS[a].label}</h1>
