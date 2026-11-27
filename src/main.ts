@@ -9,7 +9,7 @@ import "./styles.css";
 import { ACTS, DEFAULT_SEQ, DEFAULT_SETTINGS, clone, isActivity } from "./defaults";
 import { fmtDate } from "./logic/dates";
 import { gOf } from "./logic/curve";
-import { ImportError, buildExport, parseImport, uid } from "./logic/data";
+import { ImportError, buildExport, parseImport, readSessionFields, uid, updateSession } from "./logic/data";
 import * as plan from "./logic/plan";
 import {
   load,
@@ -110,6 +110,7 @@ async function doImport(file: File) {
     await replaceAll(parsed);
     state.hand = "LH";
     state.editPlan = state.editProgram = state.showForm = false;
+    state.editSession = null;
     state.session = null;
     render();
     notify(`Imported ${plural(parsed.sessions.length, "session")}, ${plural(parsed.track.days.length, "finished training day")} and your rotation.`);
@@ -173,6 +174,7 @@ document.addEventListener("click", (e) => {
     if (state.session) closeSession();
     state.view = tab.dataset.view as View;
     state.showForm = false;
+    state.editSession = null;
     render();
     window.scrollTo(0, 0);
     return;
@@ -332,6 +334,16 @@ document.addEventListener("click", (e) => {
       return stepWeight(-1);
     case "form-open":
       state.showForm = true;
+      state.editSession = null;
+      return render();
+    case "edit-session":
+      state.editSession = el.dataset.id || null;
+      state.showForm = false;
+      render();
+      document.getElementById("editForm")?.scrollIntoView({ block: "nearest" });
+      return;
+    case "edit-cancel":
+      state.editSession = null;
       return render();
     case "form-cancel":
       state.showForm = false;
@@ -344,6 +356,7 @@ document.addEventListener("click", (e) => {
           "Delete",
           () => {
             state.data.sessions = D().sessions.filter((x) => x.id !== s.id);
+            if (state.editSession === s.id) state.editSession = null;
             void saveSessions();
             render();
           },
@@ -395,23 +408,16 @@ document.addEventListener("submit", (e) => {
   const form = e.target as HTMLFormElement;
   const fd = new FormData(form);
   const num = (k: string) => Number(String(fd.get(k) ?? "").replace(",", "."));
-  if (form.id === "addForm") {
-    const reps = ["r1", "r2", "r3"].map(num).filter((v) => v > 0).map(Math.round);
-    if (!(num("weight") > 0) || !reps.length) return notify("Enter a weight and at least rep 1.");
-    const g: Gripper = fd.get("gripper") === "sisyphus" ? "sisyphus" : "prometheus";
-    state.data.sessions = D().sessions.concat([
-      {
-        id: uid(),
-        created: Date.now(),
-        date: String(fd.get("date") || today()),
-        gripper: g,
-        zone: String(fd.get("zone")),
-        hand: fd.get("hand") === "RH" ? "RH" : "LH",
-        weight: num("weight"),
-        reps,
-      },
-    ]);
-    state.showForm = false;
+  if (form.id === "addForm" || form.id === "editForm") {
+    const f = readSessionFields((k) => fd.get(k) as string, today());
+    if (typeof f === "string") return notify(f);
+    if (form.id === "editForm") {
+      state.data.sessions = updateSession(D().sessions, form.dataset.id || "", f);
+      state.editSession = null;
+    } else {
+      state.data.sessions = D().sessions.concat([{ id: uid(), created: Date.now(), ...f }]);
+      state.showForm = false;
+    }
     void saveSessions();
     render();
   } else if (form.id === "progForm") {
@@ -485,7 +491,7 @@ void load().then(() => {
 function busy(): boolean {
   const a = document.activeElement;
   const typing = !!a && (a.tagName === "INPUT" || a.tagName === "TEXTAREA" || a.tagName === "SELECT");
-  return T.open || askOpen() || !!pendingNote || typing || state.showForm || state.editProgram || state.editGuide;
+  return T.open || askOpen() || !!pendingNote || typing || state.showForm || !!state.editSession || state.editProgram || state.editGuide;
 }
 function applyUpdate() {
   flushNote();

@@ -89,6 +89,37 @@ function readSession(s: any): Session | null {
   };
 }
 
+export type SessionFields = Pick<Session, "date" | "gripper" | "zone" | "hand" | "weight" | "reps">;
+
+/**
+ * Read the add/edit session form. Hold times are whole seconds, in rep order; blank or zero reps
+ * are dropped. Returns an error message instead when weight or rep 1 is missing.
+ */
+export function readSessionFields(get: (k: string) => string, today: string): SessionFields | string {
+  const num = (k: string) => Number(String(get(k) ?? "").trim().replace(",", "."));
+  const weight = num("weight");
+  const reps: number[] = [];
+  for (let i = 1; get("r" + i) !== undefined && get("r" + i) !== null; i++) {
+    const v = num("r" + i);
+    if (v > 0) reps.push(Math.round(v));
+  }
+  if (!(weight > 0) || !(num("r1") > 0)) return "Enter a weight and at least rep 1.";
+  const date = String(get("date") || "");
+  return {
+    date: /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : today,
+    gripper: get("gripper") === "sisyphus" ? "sisyphus" : "prometheus",
+    zone: String(get("zone") ?? ""),
+    hand: get("hand") === "RH" ? "RH" : "LH",
+    weight,
+    reps,
+  };
+}
+
+/** Replace the fields of one logged session, keeping its id and creation time. */
+export function updateSession(sessions: Session[], id: string, f: SessionFields): Session[] {
+  return sessions.map((s) => (s.id === id ? { ...s, ...f, reps: f.reps.slice() } : s));
+}
+
 export class ImportError extends Error {}
 
 /** Parse an export file ({ version, sessions, settings, checks }). Throws ImportError if it isn't one. */

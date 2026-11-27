@@ -25,6 +25,7 @@ export const state = {
   /** A new version has taken over but the page is busy, so we offer a reload instead of forcing one. */
   updateReady: false,
   showForm: false,
+  editSession: null as null | string,
   editPlan: false,
   editProgram: false,
   editGuide: false,
